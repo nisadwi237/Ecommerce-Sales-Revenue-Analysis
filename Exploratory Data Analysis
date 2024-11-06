@@ -1,0 +1,351 @@
+# Proyek Analisis Data: E-Commerce Public Dataset
+- **Nama:** An Nisa Dwi Sasongko
+- **Email:** annisadwisasongko@gmail.com
+
+## Menentukan Pertanyaan Bisnis
+- Bagaimana performa penjualan dan revenue e-commerce dalam 1 tahun terakhir?
+- Produk apa yang paling banyak dan paling sedikit terjual?
+- Bagaimana rating produk memengaruhi keputusan pembelian?
+
+## Import Semua Packages/Library yang Digunakan
+# Preparing Process
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+## Data Wrangling
+### Gathering Data
+customers_df = pd.read_csv("customers_dataset.csv")
+customers_df.head()
+orderitems_df = pd.read_csv("order_items_dataset.csv")
+orderitems_df.head()
+orderreviews_df = pd.read_csv("order_reviews_dataset.csv")
+orderreviews_df.head()
+orders_df = pd.read_csv("orders_dataset.csv")
+orders_df.head()
+products_df = pd.read_csv("products_dataset.csv")
+products_df.head()
+
+### Assessing Data
+#### Menilai tabel `customers_df`
+customers_df.info()
+customers_df.isna().sum() #Menampilkan jumlah missing value pada kolom
+print("Jumlah duplikasi: ", customers_df.duplicated().sum()) #Periksa Duplikasi Data
+customers_df.describe() #periksa parameter statistik dari kolom numerik
+
+#### Menilai tabel `orderitems_df`
+orderitems_df.info()
+orderitems_df.isna().sum() #Menampilkan jumlah missing value pada kolom
+print("Jumlah duplikasi: ", orderitems_df.duplicated().sum()) #Periksa Duplikasi Data
+orderitems_df.describe() #periksa parameter statistik dari kolom numerik
+
+#### Menilai tabel `orderreviews_df`
+orderreviews_df.info()
+orderreviews_df.isna().sum() #Menampilkan jumlah missing value pada kolom
+print("Jumlah duplikasi: ", orderreviews_df.duplicated().sum()) #Periksa Duplikasi Data
+orderreviews_df.describe() #periksa parameter statistik dari kolom numerik
+
+#### Menilai tabel `orders_df`
+orders_df.info()
+orders_df.isna().sum() #Menampilkan jumlah missing value pada kolom
+print("Jumlah duplikasi: ", orders_df.duplicated().sum()) #Periksa Duplikasi Data
+orders_df.describe() #periksa parameter statistik dari kolom numerik
+
+#### Menilai tabel `products_df`
+products_df.info()
+products_df.isna().sum() #Menampilkan jumlah missing value pada kolom
+print("Jumlah duplikasi: ", products_df.duplicated().sum()) #Periksa Duplikasi Data
+products_df.describe() #periksa parameter statistik dari kolom numerik
+
+### Cleaning Data
+#### Membersihkan tabel `orderitems_df`
+orderitems_columns = ["shipping_limit_date"]
+
+for column in orderitems_columns: #mengubah tipe data pada kolom shiping_limit_date menjadi datetime.
+  orderitems_df[column] = pd.to_datetime(orderitems_df[column])
+
+orderitems_df.info() #periksa tipe data
+
+#### Membersihkan tabel `orderreviews_df`
+orderreviews_df[orderreviews_df.review_comment_title.isna()] #menampilkan baris data yang mengandung missing value
+
+#metode imputation yaitu menggunakan nilai tertentu untuk menggantikan missing value
+orderreviews_df.review_comment_title.value_counts() #mengidentifikasi nilai yang dominan
+orderreviews_df.fillna(value="No comment", inplace=True) #pengganti missing value
+orderreviews_df.isna().sum() #mengidentifikasi ulang missing value
+
+orderdate_columns = ["review_creation_date","review_answer_timestamp"]
+
+for column in orderdate_columns: #mengubah tipe data pada kolom shiping_limit_date menjadi datetime.
+  orderreviews_df[column] = pd.to_datetime(orderreviews_df[column])
+
+orderreviews_df.info() #periksa parameter statistik dari kolom numerik
+
+#### Membersihkan tabel `orders_df`
+deliverdate_columns = ["order_approved_at","order_delivered_carrier_date","order_delivered_customer_date"]
+deliverdate_columns
+
+for column in deliverdate_columns: #mengubah tipe data pada kolom shiping_limit_date menjadi datetime.
+   orders_df[column] = pd.to_datetime(orders_df[column], errors='coerce')
+
+orders_df[orders_df.order_approved_at.isna()] #menampilkan baris data yang mengandung missing value
+
+#metode imputation yaitu menggunakan nilai tertentu untuk menggantikan missing value
+orders_df.order_approved_at.value_counts() #mengidentifikasi nilai yang dominan
+orders_df.dropna(inplace=True) #menghapus baris dengan nilai missing value
+orders_df.isna().sum() #mengidentifikasi ulang missing value
+
+orders_df.info() #periksa parameter statistik dari kolom numerik
+
+#### Membersihkan tabel `products_df`
+products_df[products_df.product_category_name.isna()] #menampilkan baris data yang mengandung missing value
+products_df['product_id'].nunique() # Menghitung jumlah nilai unik dalam kolom product_id
+products_df.fillna(value="Unknown", inplace=True) #pengganti missing value
+products_df.isna().sum() #mengidentifikasi ulang missing value
+
+products_df.info() #periksa parameter statistik dari kolom numerik
+
+## Exploratory Data Analysis (EDA)
+### Explore `customers_df`
+customers_df.customer_id.is_unique
+customers_df.describe(include="all") #rangkuman parameter statistik
+customers_df.groupby(by="customer_city").agg({ #demografi pelanggan berdasar customer city dg metode groupby() diikuti agg()
+    "customer_id": "nunique",
+})
+customers_df.groupby(by="customer_city").customer_id.nunique().sort_values(ascending=False) #metode nunique() digunakan untuk menghitung jumlah nilai unik (distinct) dalam kolom customer_id untuk setiap kota dan diurutkan nilainya
+customers_df.groupby(by="customer_state").customer_id.nunique().sort_values(ascending=False) #demografi pelanggan berdasar city dg metode groupby() dan diurutkan nilainya
+customers_df
+
+### Explore `orderitems_df`
+orderitems_df.groupby(by="seller_id").agg({ #demografi order berdasar seller_id dg metode groupby() diikuti agg()
+    "order_id" : "nunique",
+    "price": ["min", "max"]
+})
+
+### Explore `orders_df`
+orders_df.order_id.is_unique
+datetime_columns = ["order_purchase_timestamp", "order_delivered_customer_date"]
+
+for column in datetime_columns: #mengubah tipe data pada kolom order_date & delivery_date menjadi datetime.
+  orders_df[column] = pd.to_datetime(orders_df[column])
+
+delivery_time = orders_df["order_delivered_customer_date"] - orders_df["order_purchase_timestamp"]
+delivery_time = delivery_time.apply(lambda x: x.total_seconds()) #method apply() untuk melakukan sebuah operasi terhadap setiap elemen dalam sebuah kolom DataFrame
+orders_df["delivery_time"] = round(delivery_time/86400) #method total_seconds() menghitung jumlah detik dari delivery_time
+orders_df.info()
+orders_df.describe(include="all")
+
+orders_df.delivery_time.hist()
+
+### Menyatukan `Tabel orders_df dan customers_df`
+orders_customers_df = pd.merge( #menggabungkan melalui proses merge metode left terhadap data orders_df dan products_df.
+    left=orders_df,
+    right=customers_df,
+    how="left",
+    left_on="customer_id",
+    right_on="customer_id"
+)
+orders_customers_df.head()
+
+### Menyatukan `Tabel orderitems_df dan products_df`
+order_products_df = pd.merge( #menggabungkan melalui proses merge metode left terhadap data orderitems_df dan products_df.
+    left=orderitems_df,
+    right=products_df,
+    how="left",
+    left_on="product_id",
+    right_on="product_id"
+)
+order_products_df.head()
+orders_df.describe(include="all")
+
+# Menghitung frekuensi pembelian produk
+product_frequency = order_products_df['product_category_name'].value_counts()
+# Menggunakan apply untuk menambahkan kolom frekuensi baru
+order_products_df["frequency"]= order_products_df['product_category_name'].apply(lambda x: product_frequency[x])
+
+#membuat pivot table berdasarkan nama kategori produk
+order_products_df.groupby(by="product_category_name").agg({
+    "order_id": "nunique",
+    "product_id": "sum",
+    "price": "sum"
+}).sort_values(by="price", ascending=False)
+
+### Menyatukan `Tabel Order_products_df dan orders_customers_df`
+order_productcust_df = pd.merge( #menggabungkan melalui proses merge metode left terhadap data orders_df dan products_df.
+    left=orders_customers_df,
+    right=order_products_df,
+    how="left",
+    left_on="order_id",
+    right_on="order_id"
+)
+order_productcust_df.head()
+
+#membuat pivot table berdasarkan nama kategori produk
+order_productcust_df.groupby(by="product_category_name").agg({
+    "order_id": "nunique",
+    "customer_id": "sum",
+    "price": "sum"
+}).sort_values(by="price", ascending=False)
+
+### Menyatukan `Tabel orderreviews_df dan orderitems_df`
+review_order_df = pd.merge( #menggabungkan melalui proses merge metode left terhadap data orderreview_df dan orderpayment_df.
+    left=orderitems_df,
+    right=orderreviews_df,
+    how="left",
+    left_on="order_id",
+    right_on="order_id"
+)
+review_order_df.head()
+
+### Menyatukan `Tabel order_productcust_df dan review_order_df`
+reviewproduct_order_df = pd.merge( #menggabungkan melalui proses merge metode left terhadap data orderreview_df dan orderpayment_df.
+    left=order_productcust_df,
+    right=review_order_df,
+    how="left",
+    left_on="order_id",
+    right_on="order_id"
+)
+reviewproduct_order_df.head()
+
+#menambahkan kolom baru bernama review_counts
+review_counts = reviewproduct_order_df.groupby('review_score').size().reset_index(name='review_counts')
+revieworder_count_df = pd.merge(reviewproduct_order_df, review_counts, on='review_score', how='left')
+revieworder_count_df
+
+revieworder_count_df.groupby(by=["review_score", "product_category_name"]).agg({
+    "order_id": "nunique",
+    "review_counts": "sum",
+    "frequency": "sum"
+}).sort_values(by=["review_score","review_counts"], ascending=False)
+
+### Menampung seluruh informasi dari seluruh tabel
+all_df = pd.merge(  #Eksplorasi Data all_df
+    left=revieworder_count_df,
+    right=order_productcust_df,
+    how="left",
+    left_on="order_id",
+    right_on="order_id"
+)
+
+#menghapus kolom dengan akhiran _x
+all_df = all_df.loc[:, ~all_df.columns.str.endswith('_x')]
+
+#mengubah tipe data pada kolom order_purchase_timestamp_y menjadi datetime.
+datetime_columns1 = ["order_purchase_timestamp_y"]
+
+for column in datetime_columns1:
+  all_df[column] = pd.to_datetime(all_df[column])
+
+all_df.isna().sum()
+
+#preferensi pembelian berdasarkan rating tertinggi dan harga termurah
+all_df1 = all_df.groupby(by=["review_score","product_category_name_y","price"]).agg({
+    "review_counts": "sum"
+}).sort_values(by=["review_score", "price"], ascending=[False, True])
+
+#Penjualan terbanyak
+all_df2 =all_df.groupby(by=["product_category_name_y"]).agg({
+    "frequency_y": "sum"
+}).sort_values(by=["frequency_y"], ascending=[False])
+
+### Menyimpan berkas data yang telah dibersihkan
+all_df.to_csv("all_data.csv", index=False)
+
+## Visualization & Explanatory Analysis
+### Pertanyaan 1: Bagaimana performa penjualan dan revenue e-commerce dalam 1 tahun terakhir?
+#mengatur target konversi dari harian menjadi bulanan menggunakan method resample() dengan parameter rule dan on
+monthly_orders_df = all_df.resample(rule='M', on='order_purchase_timestamp_y').agg({
+    "order_id": "nunique",
+    "price": "sum"
+})
+monthly_orders_df.index = monthly_orders_df.index.strftime('%Y-%m')
+monthly_orders_df = monthly_orders_df.reset_index()
+monthly_orders_df.rename(columns={
+    "order_id": "order_count",
+    "price": "revenue"
+}, inplace=True)
+monthly_orders_df.tail(12).info() #data order dalam setahun terakhir
+
+#membuat line chart terkait jumlah order per bulan
+plt.figure(figsize=(10, 5))
+plt.plot(monthly_orders_df["order_purchase_timestamp_y"],
+         monthly_orders_df["order_count"],
+         marker='o',
+         linewidth=2,
+         color="#72BCD4"
+)
+plt.title("Number of Orders per Month (September 2017-August 2018)", loc="center", fontsize=20)
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
+plt.show()
+
+#membuat line chart terkait total revenue per bulan
+plt.figure(figsize=(10, 5))
+plt.plot(
+    monthly_orders_df["order_purchase_timestamp_y"],
+    monthly_orders_df["revenue"],
+    marker='o',
+    linewidth=2,
+    color="#72BCD4"
+)
+plt.title("Total Revenue per Month (September 2017-August 2018)", loc="center", fontsize=20)
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
+plt.show()
+
+Pertanyaan 2 : Produk apa yang paling banyak dan paling sedikit terjual ?
+#Mengidentifikasi penjualan produk terbanyak dan paling sedikit
+
+sum_order_items_df = all_df.groupby("product_category_name_y").frequency_y.sum().sort_values(ascending=False).reset_index()
+sum_order_items_df.head(10)
+
+#menghasilkan kanvas kosong dengan object berupa fig dan ax
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
+
+colors = ["#72BCD4", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
+
+sns.barplot(x="frequency_y", y="product_category_name_y", data=sum_order_items_df.head(5), palette=colors, ax=ax[0])
+ax[0].set_ylabel(None)
+ax[0].set_xlabel(None)
+ax[0].set_title("Best Performing Product", loc="center", fontsize=15)
+ax[0].tick_params(axis ='y', labelsize=12)
+
+sns.barplot(x="frequency_y", y="product_category_name_y", data=sum_order_items_df.sort_values(by="frequency_y", ascending=True).head(5), palette=colors, ax=ax[1])
+ax[1].set_ylabel(None)
+ax[1].set_xlabel(None)
+ax[1].invert_xaxis()
+ax[1].yaxis.set_label_position("right")
+ax[1].yaxis.tick_right()
+ax[1].set_title("Worst Performing Product", loc="center", fontsize=15)
+ax[1].tick_params(axis='y', labelsize=12)
+
+plt.suptitle("Best and Worst Performing Product by Number of Sales", fontsize=20)
+plt.show()
+
+### Pertanyaan 3:  Bagaimana Rating Produk Memengaruhi Keputusan Pembelian?
+#preferensi pembelian berdasarkan rating tertinggi
+preferensi_df = all_df.groupby(["review_score", "product_category_name_y"]).review_counts.sum().sort_values(ascending=False).reset_index()
+preferensi_df.head(10)
+
+#menghasilkan kanvas kosong dengan object berupa fig dan ax
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
+
+#mengisi kanvas sebelumnya dengan bar chart yang dibuat menggunakan library seaborn. ax[0] merupakan object untuk kanvas pertama (bagian kiri) dan ax[1] merupakan object untuk kanvas kedua (bagian kanan).
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(24, 6))
+
+colors = ["#72BCD4", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3"]
+
+sns.barplot(x="review_counts", y="product_category_name_y", data=preferensi_df.head(5), palette=colors, ax=ax[0])
+ax[0].set_ylabel(None)
+ax[0].set_xlabel(None)
+ax[0].set_title("Best Recommendation Product", loc="center", fontsize=15)
+ax[0].tick_params(axis ='y', labelsize=12)
+
+plt.suptitle("Best Recommendation Product by Review Score", fontsize=20)
+plt.show()
+
+## Conclusion
+- Conclusion pertanyaan 1 : Pada linechart tersebut, menampilkan performa penjualan dan revenue e-commerce dalam 1 tahun terakhir dengan penjualan dan revenue tertinggi yaitu pada bulan November 2017.Kemudian, revenue terendah yaitu pada bulan Desember 2017
+- Conclution pertanyaan 2 : Pada barchart menampilkan Top 5 Best Performing Product. Produk yang menduduki peringkat pertama dengan penjualan terbanyak yaitu cama_mesa_banho. Produk yang menduduki peringkat terakhir dengan penjualan paling sedikit yaitu seguros_e_servicos.
+- Conclution pertanyaan 3 : Pada barchart menampilkan Best Recommendation Product berdasarkan Rating tertinggi. Berkaitan dengan barchart pertanyaan 2, produk dengan rating tertinggi yaitu moveis_decoracao berada di peringkat kedua best performing product, maka dapat disimpulkan bahwa rating tertinggi dapat memengaruhi pembelian produk.
