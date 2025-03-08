@@ -10,14 +10,11 @@ csv_filename = "all_data.csv"
 
 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
     with zip_ref.open(csv_filename) as file:
-        df = pd.read_csv(file)
+       all_ df = pd.read_csv(file)
       
 sns.set(style='dark')
 
 #membuat helper function()
-
-# Load data CSV sebagai DataFrame
-all_df = pd.read_csv("all_data.csv")
 
 # Select only needed columns from all_df
 alldf_small = all_df[['order_id', 'product_id', 'price', 'review_score', 'review_counts', 'customer_id_y', 
