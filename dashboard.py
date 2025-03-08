@@ -3,7 +3,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 from babel.numbers import format_currency
+import zipfile
 
+zip_path = "all_data.zip"  
+csv_filename = "all_data.csv" 
+
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    with zip_ref.open(csv_filename) as file:
+        df = pd.read_csv(file)
+      
 sns.set(style='dark')
 
 #membuat helper function()
